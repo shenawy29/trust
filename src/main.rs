@@ -1,6 +1,8 @@
 mod tcp;
 
-use std::{collections::HashMap, io, net::Ipv4Addr};
+use std::io;
+
+use std::{collections::HashMap, net::Ipv4Addr};
 use tun_tap::{Iface, Mode};
 
 #[derive(Clone, Copy, Debug, Hash, Eq, PartialEq)]
@@ -11,7 +13,7 @@ struct Quad {
 
 fn main() -> io::Result<()> {
     let mut nic = Iface::new("tun0", Mode::Tun)?;
-    let mut connections: HashMap<Quad, tcp::State> = Default::default();
+    let mut connections: HashMap<Quad, tcp::Connection> = Default::default();
     let mut buf = [0u8; 1504];
 
     loop {
@@ -46,7 +48,7 @@ fn main() -> io::Result<()> {
                         // index of first byte of payload data
                         let datai = 4 + ip_header.slice().len() + tcp_header.slice().len();
 
-                        // add to list of active connections
+                        // get that specific key if it exists, else add it to the list of active connections.
                         connections
                             .entry(Quad {
                                 src: (src, tcp_header.source_port()),

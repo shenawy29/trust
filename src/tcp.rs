@@ -1,4 +1,4 @@
-use std::io;
+use std::{default, io};
 
 pub enum State {
     Closed,
@@ -7,9 +7,34 @@ pub enum State {
     Estab,
 }
 
-impl Default for State {
+pub struct Connection {
+    state: State,
+    send: SendSequenceSpace,
+    recv: RecvSequenceSpace,
+}
+
+struct SendSequenceSpace {
+    una: usize,
+    nxt: usize,
+    wnd: usize,
+    up: bool,
+    wl1: usize,
+    wl2: usize,
+    iss: usize,
+}
+
+struct RecvSequenceSpace {
+    nxt: usize,
+    wnd: usize,
+    up: bool,
+    irs: usize,
+}
+
+impl Default for Connection {
     fn default() -> Self {
-        State::Closed
+        Connection {
+            state: State::Listen,
+        }
     }
 }
 
@@ -54,11 +79,11 @@ impl State {
                     if let Ok(packet) = ip_packet {
                         packet.write(&mut unwritten);
                     } else {
-                        // TODO: Make this an error
+                        // TODO: Make this an error.
                         return Ok(0);
                     }
 
-                    syn_ack.write(&mut unwritten)?;
+                    syn_ack.write(&mut unwritten);
 
                     unwritten.len()
                 };
