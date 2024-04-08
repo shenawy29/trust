@@ -4,5 +4,13 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+bitflags = "2.5.0"
 etherparse = "0.14.2"
+nix = { version = "0.28.0", features = ["poll"] }
 tun-tap = "0.1.4"
+
+[lib]
+name = "trust"
+
+[[bin]]
+name = "trust"

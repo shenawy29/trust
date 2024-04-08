@@ -1,69 +1,40 @@
-mod tcp;
+use std::io::{Read, Write};
 
-use std::io;
+use std::io::Result;
 
-use std::{collections::HashMap, net::Ipv4Addr};
-use tun_tap::{Iface, Mode};
+use std::thread;
 
-#[derive(Clone, Copy, Debug, Hash, Eq, PartialEq)]
-struct Quad {
-    src: (Ipv4Addr, u16),
-    dest: (Ipv4Addr, u16),
-}
+fn main() -> Result<()> {
+    let mut i = trust::Interface::new()?;
 
-fn main() -> io::Result<()> {
-    let mut nic = Iface::without_packet_info("tun0", Mode::Tun)?;
-    let mut connections: HashMap<Quad, tcp::Connection> = Default::default();
-    let mut buf = [0u8; 1504];
+    let mut l1 = i.bind(9000)?;
 
-    loop {
-        let nbytes = nic.recv(&mut buf)?;
+    let jh1 = thread::spawn(move || {
+        while let Ok(mut stream) = l1.accept() {
+            println!("Got a connection!");
 
-        if etherparse::Ipv4HeaderSlice::from_slice(&buf[..nbytes]).is_err() {
-            eprintln!("Weird packet.");
-            continue;
-        };
+            stream.write(b"hello from rust-tcp!\n").unwrap();
 
-        let ip_header = etherparse::Ipv4HeaderSlice::from_slice(&buf[..nbytes]).unwrap();
+            stream.shutdown(std::net::Shutdown::Write).unwrap();
 
-        let src = ip_header.source_addr();
-        let dest = ip_header.destination_addr();
+            loop {
+                let mut buf = [0; 512];
 
-        // if not a TCP packet, skip
-        if ip_header.protocol().0 != 0x06 {
-            continue;
-        }
+                let n = stream.read(&mut buf).unwrap();
 
-        match etherparse::TcpHeaderSlice::from_slice(&buf[ip_header.slice().len()..nbytes]) {
-            Ok(tcp_header) => {
-                // index of first byte of payload data
-                let datai = ip_header.slice().len() + tcp_header.slice().len();
+                println!("read {}b of data", n);
 
-                match connections.entry(Quad {
-                    src: (src, tcp_header.source_port()),
-                    dest: (dest, tcp_header.destination_port()),
-                }) {
-                    std::collections::hash_map::Entry::Occupied(mut c) => {
-                        c.get_mut().on_packet(
-                            &mut nic,
-                            ip_header,
-                            tcp_header,
-                            &buf[datai..nbytes],
-                        )?;
-                    }
-                    std::collections::hash_map::Entry::Vacant(e) => {
-                        if let Some(c) = tcp::Connection::accept(
-                            &mut nic,
-                            ip_header,
-                            tcp_header,
-                            &buf[datai..nbytes],
-                        )? {
-                            e.insert(c);
-                        }
-                    }
+                if n == 0 {
+                    println!("no more data!");
+                    break;
+                } else {
+                    println!("{}", std::str::from_utf8(&buf[..n]).unwrap());
                 }
             }
-            Err(_) => eprintln!("Weird packet."),
         }
-    }
+    });
+
+    jh1.join().unwrap();
+
+    Ok(())
 }
