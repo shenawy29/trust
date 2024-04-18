@@ -166,16 +166,12 @@ impl Interface {
 
         let _ = {
             let ih = ih.clone();
-<<<<<<< Updated upstream
-            let x = tokio::spawn(async { packet_loop(nic, ih) }).await?;
-=======
 
             tokio::spawn(async {
                 packet_loop(nic, ih)
                     .await
                     .expect("failed to start packet loop.");
             })
->>>>>>> Stashed changes
         };
 
         Ok(Interface { ih: Some(ih) })

@@ -4,7 +4,7 @@ use std::io::Result;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let mut i = trust::Interface::new()?;
+    let mut i = trust::Interface::new().await?;
 
     let mut l1 = i.bind(9000)?;
 
