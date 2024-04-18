@@ -2,14 +2,13 @@ use std::io::{Read, Write};
 
 use std::io::Result;
 
-use std::thread;
-
-fn main() -> Result<()> {
-    let mut i = trust::Interface::new()?;
+#[tokio::main]
+async fn main() -> Result<()> {
+    let mut i = trust::Interface::new().await?;
 
     let mut l1 = i.bind(9000)?;
 
-    let jh1 = thread::spawn(move || {
+    tokio::spawn(async move {
         while let Ok(mut stream) = l1.accept() {
             println!("Got a connection!");
 
@@ -33,8 +32,6 @@ fn main() -> Result<()> {
             }
         }
     });
-
-    jh1.join().unwrap();
 
     Ok(())
 }

@@ -11,7 +11,6 @@ use std::sync::{Arc, Condvar, Mutex};
 use std::{
     io::{Read, Write},
     net::Ipv4Addr,
-    thread,
 };
 use tun_tap::Iface;
 
@@ -39,7 +38,6 @@ struct ConnectionManager {
 
 pub struct Interface {
     ih: Option<Arc<InterfaceHandle>>,
-    jh: Option<thread::JoinHandle<Result<()>>>,
 }
 
 impl Drop for Interface {
@@ -47,13 +45,6 @@ impl Drop for Interface {
         self.ih.as_mut().unwrap().manager.lock().unwrap().terminate = true;
 
         drop(self.ih.take());
-
-        self.jh
-            .take()
-            .expect("Called drop more than once")
-            .join()
-            .unwrap()
-            .unwrap();
     }
 }
 
@@ -166,22 +157,19 @@ fn packet_loop(mut nic: Iface, ih: Arc<InterfaceHandle>) -> Result<()> {
 }
 
 impl Interface {
-    pub fn new() -> Result<Self> {
+    pub async fn new() -> Result<Self> {
         let mode = tun_tap::Mode::Tun;
 
         let nic = tun_tap::Iface::without_packet_info("tun0", mode)?;
 
         let ih: Arc<InterfaceHandle> = Default::default();
 
-        let loop_handler = {
+        let _ = {
             let ih = ih.clone();
-            thread::spawn(move || packet_loop(nic, ih))
+            let x = tokio::spawn(async { packet_loop(nic, ih) }).await?;
         };
 
-        Ok(Interface {
-            ih: Some(ih),
-            jh: Some(loop_handler),
-        })
+        Ok(Interface { ih: Some(ih) })
     }
 
     pub fn bind(&mut self, port: u16) -> Result<TcpListener> {
