@@ -48,7 +48,7 @@ impl Drop for Interface {
     }
 }
 
-fn packet_loop(mut nic: Iface, ih: Arc<InterfaceHandle>) -> Result<()> {
+async fn packet_loop(mut nic: Iface, ih: Arc<InterfaceHandle>) -> Result<()> {
     let mut buf = [0u8; 1504];
 
     loop {
@@ -166,7 +166,16 @@ impl Interface {
 
         let _ = {
             let ih = ih.clone();
+<<<<<<< Updated upstream
             let x = tokio::spawn(async { packet_loop(nic, ih) }).await?;
+=======
+
+            tokio::spawn(async {
+                packet_loop(nic, ih)
+                    .await
+                    .expect("failed to start packet loop.");
+            })
+>>>>>>> Stashed changes
         };
 
         Ok(Interface { ih: Some(ih) })

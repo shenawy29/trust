@@ -4,34 +4,32 @@ use std::io::Result;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let mut i = trust::Interface::new().await?;
+    let mut i = trust::Interface::new()?;
 
     let mut l1 = i.bind(9000)?;
 
-    tokio::spawn(async move {
-        while let Ok(mut stream) = l1.accept() {
-            println!("Got a connection!");
+    while let Ok(mut stream) = l1.accept() {
+        println!("Got a connection!");
 
-            stream.write(b"hello from rust-tcp!\n").unwrap();
+        stream.write(b"hello from rust-tcp!\n").unwrap();
 
-            stream.shutdown(std::net::Shutdown::Write).unwrap();
+        stream.shutdown(std::net::Shutdown::Write).unwrap();
 
-            loop {
-                let mut buf = [0; 512];
+        loop {
+            let mut buf = [0; 512];
 
-                let n = stream.read(&mut buf).unwrap();
+            let n = stream.read(&mut buf).unwrap();
 
-                println!("read {}b of data", n);
+            println!("read {}b of data", n);
 
-                if n == 0 {
-                    println!("no more data!");
-                    break;
-                } else {
-                    println!("{}", std::str::from_utf8(&buf[..n]).unwrap());
-                }
+            if n == 0 {
+                println!("no more data!");
+                break;
+            } else {
+                println!("{}", std::str::from_utf8(&buf[..n]).unwrap());
             }
         }
-    });
+    }
 
     Ok(())
 }
