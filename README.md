@@ -35,4 +35,4 @@ In order to try this project out, a Linux machine is requried, since this uses v
 
 ## Credits
 
-- # [Jon Gjengset](https://github.com/jonhoo) for his awesome Rust streams.
+- [Jon Gjengset](https://github.com/jonhoo) for his awesome Rust streams.
