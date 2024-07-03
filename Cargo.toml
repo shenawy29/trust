@@ -7,6 +7,7 @@ edition = "2021"
 bitflags = "2.5.0"
 etherparse = "0.14.2"
 nix = { version = "0.28.0", features = ["poll"] }
+tokio = { version = "1.37.0", features = ["full"] }
 tun-tap = "0.1.4"
 
 [lib]
